@@ -561,7 +561,7 @@
         el('col', { className: 'crowd-col-num' }),
       ]));
       table.appendChild(el('thead', {}, [el('tr', {}, [
-        el('th', {}, [text('予想順位')]),
+        el('th', {}, [text('順位')]),
         el('th', {}, [text('選手')]),
         el('th', {}, [text('点')]),
         el('th', {}, [text('票数')]),
@@ -575,7 +575,10 @@
         (evt.ranking || []).forEach(function (row) {
           body.appendChild(el('tr', {}, [
             el('td', {}, [text(String(row.predictedRank))]),
-            el('td', {}, [text([row.athleteName, row.team ? '(' + row.team + ')' : ''].join(' ').trim())]),
+            el('td', {}, [
+              el('div', {}, [text(String(row.athleteName || ''))]),
+              row.team ? el('div', { className: 'muted crowd-team' }, [text(String(row.team))]) : text('')
+            ]),
             el('td', {}, [text(String(row.totalPoints))]),
             el('td', {}, [text(String(row.appearances))]),
           ]));

@@ -287,9 +287,14 @@ button:disabled {
 
 .reveal-table .reveal-col-first { width: 9.5rem; }
 .reveal-table .reveal-col-rank { width: 7.5rem; }
-.crowd-table .crowd-col-rank { width: 4.8rem; }
-.crowd-table .crowd-col-name { width: 14rem; }
-.crowd-table .crowd-col-num { width: 4.8rem; }
+.crowd-table .crowd-col-rank { width: 3.6rem; }
+.crowd-table .crowd-col-name { width: auto; }
+.crowd-table .crowd-col-num { width: 3.6rem; }
+.crowd-team {
+  font-size: 0.78rem;
+  line-height: 1.2;
+  margin-top: 2px;
+}
 
 .two-col {
   display: grid;
@@ -499,11 +504,12 @@ button:disabled {
 
   .crowd-table {
     display: table;
-    width: max-content;
+    width: 100%;
     min-width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
     white-space: normal;
+    table-layout: fixed;
   }
 
   .crowd-table thead {
@@ -516,6 +522,35 @@ button:disabled {
     display: table-row-group;
     width: auto;
     min-width: 0;
+  }
+
+  .crowd-scroll {
+    overflow-x: visible;
+  }
+
+  .crowd-table td:first-child,
+  .crowd-table th:first-child {
+    position: static;
+    left: auto;
+    background: transparent;
+    z-index: auto;
+  }
+
+  .crowd-table thead th:first-child {
+    background: transparent;
+    z-index: auto;
+  }
+
+  .crowd-table th,
+  .crowd-table td {
+    font-size: 0.84rem;
+    padding: 6px 4px;
+  }
+
+  .crowd-table th:nth-child(2),
+  .crowd-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
   }
 
   .loading-card {
