@@ -946,6 +946,7 @@
     let iframe = null;
     let bridgePostOrigin = '*';
     let bridgeReadyOrigin = '*';
+    let bridgeMessageTargetWindow = null;
     let reqSeq = 1;
     const pending = {};
     let readySettled = false;
@@ -964,6 +965,9 @@
       }
       if (msg.type === 'gas-bridge-ready') {
         if (event.origin) bridgeReadyOrigin = event.origin;
+        if (event.source && typeof event.source.postMessage === 'function') {
+          bridgeMessageTargetWindow = event.source;
+        }
         readySettled = true;
         if (readyTimer) {
           clearTimeout(readyTimer);
@@ -1031,18 +1035,25 @@
         ready.then(function () {
           const id = 'rpc_' + (reqSeq++);
           pending[id] = { resolve: resolve, reject: reject };
+          const targetWin = bridgeMessageTargetWindow || (iframe && iframe.contentWindow);
+          if (!targetWin || typeof targetWin.postMessage !== 'function') {
+            delete pending[id];
+            reject(new Error('GAS bridge の送信先ウィンドウを取得できません。'));
+            return;
+          }
           debugLog('bridge-post', {
             method: method,
             id: id,
-            targetOrigin: bridgePostOrigin,
-            readyOrigin: bridgeReadyOrigin
+            targetOrigin: bridgeReadyOrigin || bridgePostOrigin,
+            readyOrigin: bridgeReadyOrigin,
+            via: bridgeMessageTargetWindow ? 'event.source' : 'iframe.contentWindow'
           });
-          iframe.contentWindow.postMessage({
+          targetWin.postMessage({
             type: 'gas-rpc-request',
             id: id,
             method: method,
             args: args || [],
-          }, bridgePostOrigin || '*');
+          }, bridgeReadyOrigin || bridgePostOrigin || '*');
           setTimeout(function () {
             if (!pending[id]) return;
             delete pending[id];
