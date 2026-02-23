@@ -44,10 +44,6 @@ const STANDALONE_SPREADSHEET_ID = '';
 function doGet(e) {
   const page = e && e.parameter ? String(e.parameter.page || '').toLowerCase() : '';
   if (page === 'bridge') {
-    logApiDebug_('doGet.bridge', {
-      hasParams: !!(e && e.parameter),
-      ua: e && e.parameter ? String(e.parameter._ua || '') : '',
-    });
     return HtmlService.createTemplateFromFile('Bridge')
       .evaluate()
       .setTitle('RankMaker Bridge')
@@ -79,7 +75,6 @@ function setupApp() {
 }
 
 function getParticipantOptions() {
-  logApiDebug_('getParticipantOptions');
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   return {
@@ -90,7 +85,6 @@ function getParticipantOptions() {
 }
 
 function participantLogin(participantId) {
-  logApiDebug_('participantLogin', { participantId: participantId });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const participant = getParticipantById_(participantId);
@@ -99,10 +93,6 @@ function participantLogin(participantId) {
 }
 
 function saveParticipantPredictions(participantId, predictionRows) {
-  logApiDebug_('saveParticipantPredictions', {
-    participantId: participantId,
-    rows: Array.isArray(predictionRows) ? predictionRows.length : 0,
-  });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const participant = getParticipantById_(participantId);
@@ -164,7 +154,6 @@ function saveParticipantPredictions(participantId, predictionRows) {
 }
 
 function getVisiblePredictions(participantId) {
-  logApiDebug_('getVisiblePredictions', { participantId: participantId });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   if (!getParticipantById_(participantId)) throw new Error('参加者を選択してください。');
@@ -176,7 +165,6 @@ function getVisiblePredictions(participantId) {
 }
 
 function getParticipantScoreboard(participantId) {
-  logApiDebug_('getParticipantScoreboard', { participantId: participantId });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   if (!getParticipantById_(participantId)) throw new Error('参加者を選択してください。');
@@ -188,7 +176,6 @@ function getParticipantScoreboard(participantId) {
 }
 
 function getParticipantCrowdForecast(participantId) {
-  logApiDebug_('getParticipantCrowdForecast', { participantId: participantId });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   if (!getParticipantById_(participantId)) throw new Error('参加者を選択してください。');
@@ -200,14 +187,12 @@ function getParticipantCrowdForecast(participantId) {
 }
 
 function adminGetDashboard() {
-  logApiDebug_('adminGetDashboard');
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   return buildAdminDashboard_();
 }
 
 function adminUpdateConfig(patch) {
-  logApiDebug_('adminUpdateConfig', { keys: patch ? Object.keys(patch) : [] });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const safePatch = {};
@@ -250,7 +235,6 @@ function adminSaveParticipants(participants) {
 }
 
 function adminAddParticipant(displayName) {
-  logApiDebug_('adminAddParticipant', { displayName: displayName });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const name = String(displayName || '').trim();
@@ -265,7 +249,6 @@ function adminAddParticipant(displayName) {
 }
 
 function adminDeleteParticipant(participantId) {
-  logApiDebug_('adminDeleteParticipant', { participantId: participantId });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const id = String(participantId || '').trim();
@@ -310,7 +293,6 @@ function adminImportMasterData(masterData) {
 }
 
 function adminSaveResults(resultRows) {
-  logApiDebug_('adminSaveResults', { rows: Array.isArray(resultRows) ? resultRows.length : 0 });
   ensureSheets_();
   ensureOfficialMasterDataLoaded_();
   const master = getMasterData_();
@@ -340,21 +322,6 @@ function adminSaveResults(resultRows) {
 
   replaceSheetRows_(SHEETS.RESULTS, HEADERS[SHEETS.RESULTS], rows);
   return buildAdminDashboard_();
-}
-
-function bridgePing(info) {
-  logApiDebug_('bridgePing', info || {});
-  return { ok: true };
-}
-
-function logApiDebug_(name, detail) {
-  try {
-    console.log('[RankMaker]', name, JSON.stringify(detail || {}));
-  } catch (err) {
-    try {
-      Logger.log('[RankMaker] ' + name + ' ' + JSON.stringify(detail || {}));
-    } catch (ignored) {}
-  }
 }
 
 function buildParticipantDashboard_(participant) {

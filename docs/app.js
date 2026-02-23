@@ -1,8 +1,6 @@
 (function () {
   'use strict';
 
-  const DEBUG_ENABLED = new URLSearchParams(window.location.search).get('debug') === '1';
-  const debugState = { logs: [] };
   const bridgeClient = createGasBridgeClient_();
   const state = {
     page: getInitialPage_(),
@@ -22,7 +20,6 @@
   const FOUR_PLACE_EVENT_NAMES = { '100m 自由形': true, '200m 自由形': true };
 
   function init() {
-    debugLog('init', { page: state.page, gasConfigured: bridgeClient.isConfigured() });
     render();
     if (!bridgeClient.isConfigured()) {
       flash('GAS のURLが未設定です。docs/config.js（Pages配信時はGitHub Variables）を確認してください。', true);
@@ -54,7 +51,6 @@
     }
     app.appendChild(container);
     syncBusyOverlay();
-    syncDebugPanel();
   }
 
   function renderHero() {
@@ -116,8 +112,7 @@
       tabs.appendChild(el('button', {
         className: 'tab-btn' + (state.activeParticipantTab === t[0] ? ' active' : ''),
         onclick: function () {
-          state.activeParticipantTab = t[0];
-          render();
+          setParticipantTab_(t[0]);
         }
       }, [text(t[1])]));
     });
@@ -203,11 +198,8 @@
 
   function renderRevealedPredictionsPanel(dashboard) {
     const wrap = el('div');
-    wrap.appendChild(el('div', { className: 'button-row' }, [
-      el('button', { className: 'secondary', onclick: loadVisiblePredictions }, [text('取得する')]),
-    ]));
     if (!dashboard.visiblePredictions) {
-      wrap.appendChild(el('div', { className: 'message' }, [text('「取得する」を押すと全員の予想を表示します。')]));
+      wrap.appendChild(el('div', { className: 'message' }, [text('読み込み中です...')]));
       return wrap;
     }
 
@@ -248,7 +240,7 @@
         }
       });
       model.events.forEach(function (evt) {
-        select.appendChild(option(evt.eventId, eventDisplayLabel(evt)));
+        select.appendChild(option(evt.eventId, eventDisplayLabelForReveal(evt)));
       });
       wrap.appendChild(field('種目', select));
       wrap.appendChild(renderRevealByEvent(model));
@@ -258,7 +250,14 @@
 
   function renderRevealByUser(model) {
     const participantId = state.selectedRevealParticipantId;
-    const table = el('table', { className: 'list-table' });
+    const table = el('table', { className: 'list-table reveal-table' });
+    table.appendChild(el('colgroup', {}, [
+      el('col', { className: 'reveal-col-first' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+    ]));
     table.appendChild(el('thead', {}, [el('tr', {}, [
       el('th', {}, [text('種目')]),
       el('th', {}, [text('1位')]),
@@ -270,7 +269,7 @@
     model.events.forEach(function (evt) {
       const row = model.byParticipant[participantId] && model.byParticipant[participantId][evt.eventId];
       body.appendChild(el('tr', {}, [
-        el('td', {}, [text(eventDisplayLabel(evt))]),
+        el('td', {}, [text(eventDisplayLabelForReveal(evt))]),
         el('td', {}, [text(row ? row.pick1 : '')]),
         el('td', {}, [text(row ? row.pick2 : '')]),
         el('td', {}, [text(row ? row.pick3 : '')]),
@@ -278,12 +277,19 @@
       ]));
     });
     table.appendChild(body);
-    return table;
+    return el('div', { className: 'table-scroll reveal-scroll' }, [table]);
   }
 
   function renderRevealByEvent(model) {
     const eventId = state.selectedRevealEventId;
-    const table = el('table', { className: 'list-table' });
+    const table = el('table', { className: 'list-table reveal-table' });
+    table.appendChild(el('colgroup', {}, [
+      el('col', { className: 'reveal-col-first' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+      el('col', { className: 'reveal-col-rank' }),
+    ]));
     table.appendChild(el('thead', {}, [el('tr', {}, [
       el('th', {}, [text('ユーザー')]),
       el('th', {}, [text('1位')]),
@@ -303,26 +309,20 @@
       ]));
     });
     table.appendChild(body);
-    return table;
+    return el('div', { className: 'table-scroll reveal-scroll' }, [table]);
   }
 
   function renderParticipantScoreboardPanel(dashboard) {
     const wrap = el('div');
-    wrap.appendChild(el('div', { className: 'button-row' }, [
-      el('button', { className: 'secondary', onclick: loadParticipantScoreboard }, [text('結果比較を取得')]),
-    ]));
     if (dashboard.scoreboard) wrap.appendChild(renderScoreboard(dashboard.scoreboard));
-    else wrap.appendChild(el('div', { className: 'message' }, [text('「結果比較を取得」を押すとランキングを表示します。')]));
+    else wrap.appendChild(el('div', { className: 'message' }, [text('読み込み中です...')]));
     return wrap;
   }
 
   function renderCrowdForecastPanel(dashboard) {
     const wrap = el('div');
-    wrap.appendChild(el('div', { className: 'button-row' }, [
-      el('button', { className: 'secondary', onclick: loadParticipantCrowdForecast }, [text('投票集計予想を取得')]),
-    ]));
     if (dashboard.crowdForecast) wrap.appendChild(renderCrowdForecast(dashboard.crowdForecast));
-    else wrap.appendChild(el('div', { className: 'message' }, [text('「投票集計予想を取得」を押すと種目別の集計予想を表示します。')]));
+    else wrap.appendChild(el('div', { className: 'message' }, [text('読み込み中です...')]));
     return wrap;
   }
 
@@ -553,7 +553,13 @@
         el('div', { className: 'event-sub' }, [text('投票数: ' + String(evt.submissionCount || 0))]),
       ]));
 
-      const table = el('table', { className: 'list-table' });
+      const table = el('table', { className: 'list-table crowd-table' });
+      table.appendChild(el('colgroup', {}, [
+        el('col', { className: 'crowd-col-rank' }),
+        el('col', { className: 'crowd-col-name' }),
+        el('col', { className: 'crowd-col-num' }),
+        el('col', { className: 'crowd-col-num' }),
+      ]));
       table.appendChild(el('thead', {}, [el('tr', {}, [
         el('th', {}, [text('予想順位')]),
         el('th', {}, [text('選手')]),
@@ -576,7 +582,7 @@
         });
       }
       table.appendChild(body);
-      card.appendChild(table);
+      card.appendChild(el('div', { className: 'table-scroll crowd-scroll' }, [table]));
       wrap.appendChild(card);
     });
     return wrap;
@@ -714,16 +720,13 @@
   }
 
   function runServer(method, args, onSuccess) {
-    debugLog('rpc-call', { method: method, argsCount: (args || []).length });
     setBusy(true, busyLabelForMethod(method));
     bridgeClient.call(method, args || [])
       .then(function (res) {
-        debugLog('rpc-success', { method: method });
         setBusy(false, '');
         onSuccess(res);
       })
       .catch(function (err) {
-        debugLog('rpc-error', { method: method, message: (err && err.message) || String(err) });
         setBusy(false, '');
         flash((err && err.message) || String(err) || 'エラーが発生しました。', true);
       });
@@ -937,6 +940,38 @@
     return [(evt && evt.gender) || '', (evt && evt.eventName) || ''].join(' ').trim();
   }
 
+  function setParticipantTab_(tabId) {
+    state.activeParticipantTab = tabId;
+    render();
+    if (!state.participantDashboard) return;
+    if (tabId === 'reveal' && !state.participantDashboard.visiblePredictions) {
+      loadVisiblePredictions();
+    }
+    if (tabId === 'crowd' && !state.participantDashboard.crowdForecast) {
+      loadParticipantCrowdForecast();
+    }
+    if (tabId === 'scoreboard' && !state.participantDashboard.scoreboard) {
+      loadParticipantScoreboard();
+    }
+  }
+
+  function eventDisplayLabelForReveal(evt) {
+    const gender = (evt && evt.gender) || '';
+    const eventName = abbreviateRevealEventName_((evt && evt.eventName) || '');
+    return [gender, eventName].join(' ').trim();
+  }
+
+  function abbreviateRevealEventName_(name) {
+    return String(name || '')
+      .replace(/\s*個人メドレー$/, ' IM')
+      .replace(/\s*バタフライ$/, ' Fly')
+      .replace(/\s*平泳ぎ$/, ' Br')
+      .replace(/\s*背泳ぎ$/, ' Ba')
+      .replace(/\s*自由形$/, ' Fr')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function getInitialPage_() {
     const params = new URLSearchParams(window.location.search);
     return params.get('page') === 'admin' ? 'admin' : 'participant';
@@ -960,9 +995,6 @@
 
     window.addEventListener('message', function (event) {
       const msg = event.data || {};
-      if (msg && (msg.type === 'gas-bridge-ready' || msg.type === 'gas-rpc-response')) {
-        debugLog('window-message', { origin: event.origin, type: msg.type, id: msg.id, ok: msg.ok });
-      }
       if (msg.type === 'gas-bridge-ready') {
         if (event.origin) bridgeReadyOrigin = event.origin;
         if (event.source && typeof event.source.postMessage === 'function') {
@@ -999,7 +1031,6 @@
         bridgePostOrigin = '*';
       }
       iframe = document.createElement('iframe');
-      debugLog('bridge-iframe-create', { bridgeUrl: bridgeUrl });
       iframe.src = bridgeUrl;
       iframe.title = 'gas-bridge';
       iframe.style.position = 'absolute';
@@ -1010,16 +1041,9 @@
       iframe.style.pointerEvents = 'none';
       iframe.setAttribute('aria-hidden', 'true');
       document.body.appendChild(iframe);
-      iframe.addEventListener('load', function () {
-        debugLog('bridge-iframe-load', { src: iframe.src });
-      });
-      iframe.addEventListener('error', function () {
-        debugLog('bridge-iframe-error', { src: iframe.src });
-      });
       readyTimer = setTimeout(function () {
         if (readySettled) return;
         readySettled = true;
-        debugLog('bridge-ready-timeout', { bridgeUrl: bridgeUrl });
         readyReject(new Error('GAS bridge の初期化に失敗しました。GAS を再デプロイ済みか、Bridge.html が追加されているか、GAS URL が /exec か確認してください。'));
       }, 10000);
     }
@@ -1041,13 +1065,6 @@
             reject(new Error('GAS bridge の送信先ウィンドウを取得できません。'));
             return;
           }
-          debugLog('bridge-post', {
-            method: method,
-            id: id,
-            targetOrigin: bridgeReadyOrigin || bridgePostOrigin,
-            readyOrigin: bridgeReadyOrigin,
-            via: bridgeMessageTargetWindow ? 'event.source' : 'iframe.contentWindow'
-          });
           targetWin.postMessage({
             type: 'gas-rpc-request',
             id: id,
@@ -1057,7 +1074,6 @@
           setTimeout(function () {
             if (!pending[id]) return;
             delete pending[id];
-            debugLog('rpc-timeout', { method: method, id: id });
             reject(new Error('GAS応答がタイムアウトしました。'));
           }, 30000);
         }).catch(reject);
@@ -1077,54 +1093,6 @@
     const url = new URL(gasWebAppUrl);
     url.searchParams.set('page', 'bridge');
     return url.toString();
-  }
-
-  function debugLog(type, detail) {
-    if (!DEBUG_ENABLED) return;
-    const line = {
-      at: new Date().toISOString(),
-      type: type,
-      detail: detail || null,
-    };
-    debugState.logs.push(line);
-    if (debugState.logs.length > 80) debugState.logs.shift();
-    try { console.log('[rankmaker-debug]', line); } catch (err) {}
-    syncDebugPanel();
-  }
-
-  function syncDebugPanel() {
-    if (!DEBUG_ENABLED) return;
-    const app = document.getElementById('app');
-    if (!app) return;
-    let panel = document.getElementById('debug-panel');
-    if (!panel) {
-      panel = el('div', {
-        id: 'debug-panel',
-        style: [
-          'position:fixed',
-          'left:8px',
-          'right:8px',
-          'bottom:8px',
-          'z-index:9999',
-          'background:rgba(17,24,39,.95)',
-          'color:#e5e7eb',
-          'border:1px solid rgba(255,255,255,.18)',
-          'border-radius:10px',
-          'padding:8px'
-        ].join(';')
-      });
-      panel.appendChild(el('div', { style: 'font-size:12px;font-weight:700;margin-bottom:6px;' }, [text('Debug (?debug=1)')]));
-      panel.appendChild(el('pre', {
-        id: 'debug-panel-body',
-        style: 'margin:0;max-height:32vh;overflow:auto;font-size:11px;line-height:1.35;white-space:pre-wrap;word-break:break-word;'
-      }, []));
-      app.appendChild(panel);
-    }
-    const body = document.getElementById('debug-panel-body');
-    if (!body) return;
-    body.textContent = debugState.logs.map(function (l) {
-      return [l.at, l.type, l.detail ? JSON.stringify(l.detail) : ''].join(' ');
-    }).join('\n');
   }
 
   window.addEventListener('load', init);

@@ -279,6 +279,18 @@ button:disabled {
   white-space: nowrap;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reveal-table .reveal-col-first { width: 9.5rem; }
+.reveal-table .reveal-col-rank { width: 7.5rem; }
+.crowd-table .crowd-col-rank { width: 4.8rem; }
+.crowd-table .crowd-col-name { width: 14rem; }
+.crowd-table .crowd-col-num { width: 4.8rem; }
+
 .two-col {
   display: grid;
   grid-template-columns: 1fr;
@@ -462,6 +474,48 @@ button:disabled {
   .list-table td {
     font-size: 0.9rem;
     padding: 7px 6px;
+  }
+
+  .reveal-table {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    white-space: normal;
+  }
+
+  .reveal-table thead {
+    display: table-header-group;
+    width: auto;
+    min-width: 0;
+  }
+
+  .reveal-table tbody {
+    display: table-row-group;
+    width: auto;
+    min-width: 0;
+  }
+
+  .crowd-table {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    white-space: normal;
+  }
+
+  .crowd-table thead {
+    display: table-header-group;
+    width: auto;
+    min-width: 0;
+  }
+
+  .crowd-table tbody {
+    display: table-row-group;
+    width: auto;
+    min-width: 0;
   }
 
   .loading-card {

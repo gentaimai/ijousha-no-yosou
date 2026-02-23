@@ -77,17 +77,6 @@
           }
         });
 
-        // Debug ping: confirms Bridge JS is actually executing in iframe context.
-        try {
-          google.script.run
-            .withFailureHandler(function () {})
-            .bridgePing({
-              href: String(location.href || ''),
-              hasTop: !!window.top,
-              hasParent: !!window.parent,
-            });
-        } catch (err) {}
-
         // Wrappers may initialize asynchronously; send ready more than once.
         reply('*', { type: 'gas-bridge-ready' });
         setTimeout(function () { reply('*', { type: 'gas-bridge-ready' }); }, 300);
