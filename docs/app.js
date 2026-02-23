@@ -940,6 +940,8 @@
     let bridgeOrigin = '*';
     let reqSeq = 1;
     const pending = {};
+    let readySettled = false;
+    let readyTimer = null;
     let readyResolve;
     let readyReject;
     let ready = new Promise(function (resolve, reject) {
@@ -950,6 +952,12 @@
     window.addEventListener('message', function (event) {
       const msg = event.data || {};
       if (msg.type === 'gas-bridge-ready') {
+        if (event.origin) bridgeOrigin = event.origin;
+        readySettled = true;
+        if (readyTimer) {
+          clearTimeout(readyTimer);
+          readyTimer = null;
+        }
         readyResolve();
         return;
       }
@@ -986,11 +994,11 @@
       iframe.style.pointerEvents = 'none';
       iframe.setAttribute('aria-hidden', 'true');
       document.body.appendChild(iframe);
-      setTimeout(function () {
-        // ready message が来ない場合に備えて失敗させる
-        if (!iframe) return;
-        // ready Promise が未解決でも reject しすぎない（既に解決済みなら noop）
-      }, 1);
+      readyTimer = setTimeout(function () {
+        if (readySettled) return;
+        readySettled = true;
+        readyReject(new Error('GAS bridge の初期化に失敗しました。GAS を再デプロイ済みか、Bridge.html が追加されているか、GAS URL が /exec か確認してください。'));
+      }, 10000);
     }
 
     function call(method, args) {
@@ -1009,7 +1017,7 @@
             id: id,
             method: method,
             args: args || [],
-          }, bridgeOrigin);
+          }, bridgeOrigin || '*');
           setTimeout(function () {
             if (!pending[id]) return;
             delete pending[id];
