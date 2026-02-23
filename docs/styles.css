@@ -290,6 +290,9 @@ button:disabled {
 .crowd-table .crowd-col-rank { width: 3.6rem; }
 .crowd-table .crowd-col-name { width: auto; }
 .crowd-table .crowd-col-num { width: 3.6rem; }
+.score-table .score-col-rank { width: 3.6rem; }
+.score-table .score-col-name { width: auto; }
+.score-table .score-col-num { width: 4.4rem; }
 .crowd-team {
   font-size: 0.78rem;
   line-height: 1.2;
@@ -524,7 +527,33 @@ button:disabled {
     min-width: 0;
   }
 
+  .score-table {
+    display: table;
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    white-space: normal;
+    table-layout: fixed;
+  }
+
+  .score-table thead {
+    display: table-header-group;
+    width: auto;
+    min-width: 0;
+  }
+
+  .score-table tbody {
+    display: table-row-group;
+    width: auto;
+    min-width: 0;
+  }
+
   .crowd-scroll {
+    overflow-x: visible;
+  }
+
+  .score-scroll {
     overflow-x: visible;
   }
 
@@ -541,14 +570,39 @@ button:disabled {
     z-index: auto;
   }
 
+  .score-table td:first-child,
+  .score-table th:first-child {
+    position: static;
+    left: auto;
+    background: transparent;
+    z-index: auto;
+  }
+
+  .score-table thead th:first-child {
+    background: transparent;
+    z-index: auto;
+  }
+
   .crowd-table th,
   .crowd-table td {
     font-size: 0.84rem;
     padding: 6px 4px;
   }
 
+  .score-table th,
+  .score-table td {
+    font-size: 0.82rem;
+    padding: 6px 4px;
+  }
+
   .crowd-table th:nth-child(2),
   .crowd-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .score-table th:nth-child(2),
+  .score-table td:nth-child(2) {
     white-space: normal;
     word-break: break-word;
   }

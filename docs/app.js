@@ -517,7 +517,14 @@
     wrap.appendChild(el('div', { className: 'message' }, [
       text('採点: ' + (scoreboard.scoringRule || 'exact=3pt, top3/4=1pt') + ' / 結果入力済み種目数: ' + (scoreboard.completedEvents || 0))
     ]));
-    const table = el('table', { className: 'list-table' });
+    const table = el('table', { className: 'list-table score-table' });
+    table.appendChild(el('colgroup', {}, [
+      el('col', { className: 'score-col-rank' }),
+      el('col', { className: 'score-col-name' }),
+      el('col', { className: 'score-col-num' }),
+      el('col', { className: 'score-col-num' }),
+      el('col', { className: 'score-col-num' }),
+    ]));
     table.appendChild(el('thead', {}, [el('tr', {}, [
       el('th', {}, [text('順位')]),
       el('th', {}, [text('参加者')]),
@@ -536,7 +543,7 @@
       ]));
     });
     table.appendChild(body);
-    wrap.appendChild(table);
+    wrap.appendChild(el('div', { className: 'table-scroll score-scroll' }, [table]));
     return wrap;
   }
 
