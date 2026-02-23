@@ -944,7 +944,8 @@
 
   function createGasBridgeClient_() {
     let iframe = null;
-    let bridgeOrigin = '*';
+    let bridgePostOrigin = '*';
+    let bridgeReadyOrigin = '*';
     let reqSeq = 1;
     const pending = {};
     let readySettled = false;
@@ -962,7 +963,7 @@
         debugLog('window-message', { origin: event.origin, type: msg.type, id: msg.id, ok: msg.ok });
       }
       if (msg.type === 'gas-bridge-ready') {
-        if (event.origin) bridgeOrigin = event.origin;
+        if (event.origin) bridgeReadyOrigin = event.origin;
         readySettled = true;
         if (readyTimer) {
           clearTimeout(readyTimer);
@@ -989,9 +990,9 @@
       if (!gasUrl) throw new Error('GAS URL が未設定です。');
       const bridgeUrl = buildBridgeUrl_(gasUrl);
       try {
-        bridgeOrigin = new URL(bridgeUrl).origin;
+        bridgePostOrigin = new URL(bridgeUrl).origin;
       } catch (err) {
-        bridgeOrigin = '*';
+        bridgePostOrigin = '*';
       }
       iframe = document.createElement('iframe');
       debugLog('bridge-iframe-create', { bridgeUrl: bridgeUrl });
@@ -1030,13 +1031,18 @@
         ready.then(function () {
           const id = 'rpc_' + (reqSeq++);
           pending[id] = { resolve: resolve, reject: reject };
-          debugLog('bridge-post', { method: method, id: id, targetOrigin: bridgeOrigin });
+          debugLog('bridge-post', {
+            method: method,
+            id: id,
+            targetOrigin: bridgePostOrigin,
+            readyOrigin: bridgeReadyOrigin
+          });
           iframe.contentWindow.postMessage({
             type: 'gas-rpc-request',
             id: id,
             method: method,
             args: args || [],
-          }, bridgeOrigin || '*');
+          }, bridgePostOrigin || '*');
           setTimeout(function () {
             if (!pending[id]) return;
             delete pending[id];

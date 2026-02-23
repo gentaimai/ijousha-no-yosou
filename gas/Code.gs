@@ -342,6 +342,11 @@ function adminSaveResults(resultRows) {
   return buildAdminDashboard_();
 }
 
+function bridgePing(info) {
+  logApiDebug_('bridgePing', info || {});
+  return { ok: true };
+}
+
 function logApiDebug_(name, detail) {
   try {
     console.log('[RankMaker]', name, JSON.stringify(detail || {}));
