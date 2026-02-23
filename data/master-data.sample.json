@@ -1,0 +1,67 @@
+{
+  "events": [
+    {
+      "eventId": "M-100FR",
+      "sortOrder": 1,
+      "gender": "男子",
+      "eventName": "100m 自由形"
+    },
+    {
+      "eventId": "W-100FR",
+      "sortOrder": 2,
+      "gender": "女子",
+      "eventName": "100m 自由形"
+    }
+  ],
+  "entries": [
+    {
+      "entryId": "M-100FR:1",
+      "eventId": "M-100FR",
+      "seedOrder": 1,
+      "athleteName": "山田 太郎",
+      "team": "○○SC",
+      "entryTime": "48.99"
+    },
+    {
+      "entryId": "M-100FR:2",
+      "eventId": "M-100FR",
+      "seedOrder": 2,
+      "athleteName": "佐藤 次郎",
+      "team": "△△大",
+      "entryTime": "49.21"
+    },
+    {
+      "entryId": "M-100FR:3",
+      "eventId": "M-100FR",
+      "seedOrder": 3,
+      "athleteName": "鈴木 三郎",
+      "team": "□□高",
+      "entryTime": "49.40"
+    },
+    {
+      "entryId": "W-100FR:1",
+      "eventId": "W-100FR",
+      "seedOrder": 1,
+      "athleteName": "田中 花子",
+      "team": "◇◇SC",
+      "entryTime": "54.90"
+    },
+    {
+      "entryId": "W-100FR:2",
+      "eventId": "W-100FR",
+      "seedOrder": 2,
+      "athleteName": "高橋 美咲",
+      "team": "××大",
+      "entryTime": "55.10"
+    },
+    {
+      "entryId": "W-100FR:3",
+      "eventId": "W-100FR",
+      "seedOrder": 3,
+      "athleteName": "伊藤 愛",
+      "team": "○○SC",
+      "entryTime": "55.22"
+    }
+  ]
+}
+

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bridge</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        'use strict';
+
+        const ALLOWED_METHODS = {
+          getParticipantOptions: true,
+          participantLogin: true,
+          saveParticipantPredictions: true,
+          getVisiblePredictions: true,
+          getParticipantScoreboard: true,
+          getParticipantCrowdForecast: true,
+          adminGetDashboard: true,
+          adminUpdateConfig: true,
+          adminAddParticipant: true,
+          adminDeleteParticipant: true,
+          adminSaveResults: true,
+        };
+
+        function reply(targetOrigin, payload) {
+          try {
+            window.parent.postMessage(payload, targetOrigin || '*');
+          } catch (err) {
+            window.parent.postMessage(payload, '*');
+          }
+        }
+
+        window.addEventListener('message', function (event) {
+          const msg = event.data || {};
+          if (!msg || msg.type !== 'gas-rpc-request') return;
+
+          const id = msg.id;
+          const method = String(msg.method || '');
+          const args = Array.isArray(msg.args) ? msg.args : [];
+
+          if (!ALLOWED_METHODS[method]) {
+            reply(event.origin, {
+              type: 'gas-rpc-response',
+              id: id,
+              ok: false,
+              error: '許可されていないAPIです: ' + method,
+            });
+            return;
+          }
+
+          try {
+            google.script.run
+              .withSuccessHandler(function (result) {
+                reply(event.origin, { type: 'gas-rpc-response', id: id, ok: true, result: result });
+              })
+              .withFailureHandler(function (err) {
+                reply(event.origin, {
+                  type: 'gas-rpc-response',
+                  id: id,
+                  ok: false,
+                  error: (err && err.message) || String(err || 'Unknown error'),
+                });
+              })[method].apply(null, args);
+          } catch (err) {
+            reply(event.origin, {
+              type: 'gas-rpc-response',
+              id: id,
+              ok: false,
+              error: (err && err.message) || String(err || 'Unknown error'),
+            });
+          }
+        });
+
+        reply('*', { type: 'gas-bridge-ready' });
+      })();
+    </script>
+  </body>
+  </html>
+
