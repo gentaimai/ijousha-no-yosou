@@ -26,10 +26,13 @@
         };
 
         function reply(targetOrigin, payload) {
+          // GAS web app may be wrapped by script.google.com -> script.googleusercontent.com nested frames.
+          // Post to top so the GitHub Pages parent can receive messages reliably.
+          var targetWin = window.top || window.parent;
           try {
-            window.parent.postMessage(payload, targetOrigin || '*');
+            targetWin.postMessage(payload, targetOrigin || '*');
           } catch (err) {
-            window.parent.postMessage(payload, '*');
+            targetWin.postMessage(payload, '*');
           }
         }
 
@@ -42,7 +45,7 @@
           const args = Array.isArray(msg.args) ? msg.args : [];
 
           if (!ALLOWED_METHODS[method]) {
-            reply(event.origin, {
+            reply('*', {
               type: 'gas-rpc-response',
               id: id,
               ok: false,
@@ -54,10 +57,10 @@
           try {
             google.script.run
               .withSuccessHandler(function (result) {
-                reply(event.origin, { type: 'gas-rpc-response', id: id, ok: true, result: result });
+                reply('*', { type: 'gas-rpc-response', id: id, ok: true, result: result });
               })
               .withFailureHandler(function (err) {
-                reply(event.origin, {
+                reply('*', {
                   type: 'gas-rpc-response',
                   id: id,
                   ok: false,
@@ -65,7 +68,7 @@
                 });
               })[method].apply(null, args);
           } catch (err) {
-            reply(event.origin, {
+            reply('*', {
               type: 'gas-rpc-response',
               id: id,
               ok: false,
@@ -74,9 +77,11 @@
           }
         });
 
+        // Wrappers may initialize asynchronously; send ready more than once.
         reply('*', { type: 'gas-bridge-ready' });
+        setTimeout(function () { reply('*', { type: 'gas-bridge-ready' }); }, 300);
+        setTimeout(function () { reply('*', { type: 'gas-bridge-ready' }); }, 1000);
       })();
     </script>
   </body>
   </html>
-

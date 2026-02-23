@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  const DEBUG_ENABLED = new URLSearchParams(window.location.search).get('debug') === '1';
+  const debugState = { logs: [] };
   const bridgeClient = createGasBridgeClient_();
   const state = {
     page: getInitialPage_(),
@@ -20,6 +22,7 @@
   const FOUR_PLACE_EVENT_NAMES = { '100m 自由形': true, '200m 自由形': true };
 
   function init() {
+    debugLog('init', { page: state.page, gasConfigured: bridgeClient.isConfigured() });
     render();
     if (!bridgeClient.isConfigured()) {
       flash('GAS のURLが未設定です。docs/config.js（Pages配信時はGitHub Variables）を確認してください。', true);
@@ -51,6 +54,7 @@
     }
     app.appendChild(container);
     syncBusyOverlay();
+    syncDebugPanel();
   }
 
   function renderHero() {
@@ -710,13 +714,16 @@
   }
 
   function runServer(method, args, onSuccess) {
+    debugLog('rpc-call', { method: method, argsCount: (args || []).length });
     setBusy(true, busyLabelForMethod(method));
     bridgeClient.call(method, args || [])
       .then(function (res) {
+        debugLog('rpc-success', { method: method });
         setBusy(false, '');
         onSuccess(res);
       })
       .catch(function (err) {
+        debugLog('rpc-error', { method: method, message: (err && err.message) || String(err) });
         setBusy(false, '');
         flash((err && err.message) || String(err) || 'エラーが発生しました。', true);
       });
@@ -951,6 +958,9 @@
 
     window.addEventListener('message', function (event) {
       const msg = event.data || {};
+      if (msg && (msg.type === 'gas-bridge-ready' || msg.type === 'gas-rpc-response')) {
+        debugLog('window-message', { origin: event.origin, type: msg.type, id: msg.id, ok: msg.ok });
+      }
       if (msg.type === 'gas-bridge-ready') {
         if (event.origin) bridgeOrigin = event.origin;
         readySettled = true;
@@ -984,6 +994,7 @@
         bridgeOrigin = '*';
       }
       iframe = document.createElement('iframe');
+      debugLog('bridge-iframe-create', { bridgeUrl: bridgeUrl });
       iframe.src = bridgeUrl;
       iframe.title = 'gas-bridge';
       iframe.style.position = 'absolute';
@@ -994,9 +1005,16 @@
       iframe.style.pointerEvents = 'none';
       iframe.setAttribute('aria-hidden', 'true');
       document.body.appendChild(iframe);
+      iframe.addEventListener('load', function () {
+        debugLog('bridge-iframe-load', { src: iframe.src });
+      });
+      iframe.addEventListener('error', function () {
+        debugLog('bridge-iframe-error', { src: iframe.src });
+      });
       readyTimer = setTimeout(function () {
         if (readySettled) return;
         readySettled = true;
+        debugLog('bridge-ready-timeout', { bridgeUrl: bridgeUrl });
         readyReject(new Error('GAS bridge の初期化に失敗しました。GAS を再デプロイ済みか、Bridge.html が追加されているか、GAS URL が /exec か確認してください。'));
       }, 10000);
     }
@@ -1012,6 +1030,7 @@
         ready.then(function () {
           const id = 'rpc_' + (reqSeq++);
           pending[id] = { resolve: resolve, reject: reject };
+          debugLog('bridge-post', { method: method, id: id, targetOrigin: bridgeOrigin });
           iframe.contentWindow.postMessage({
             type: 'gas-rpc-request',
             id: id,
@@ -1021,6 +1040,7 @@
           setTimeout(function () {
             if (!pending[id]) return;
             delete pending[id];
+            debugLog('rpc-timeout', { method: method, id: id });
             reject(new Error('GAS応答がタイムアウトしました。'));
           }, 30000);
         }).catch(reject);
@@ -1040,6 +1060,54 @@
     const url = new URL(gasWebAppUrl);
     url.searchParams.set('page', 'bridge');
     return url.toString();
+  }
+
+  function debugLog(type, detail) {
+    if (!DEBUG_ENABLED) return;
+    const line = {
+      at: new Date().toISOString(),
+      type: type,
+      detail: detail || null,
+    };
+    debugState.logs.push(line);
+    if (debugState.logs.length > 80) debugState.logs.shift();
+    try { console.log('[rankmaker-debug]', line); } catch (err) {}
+    syncDebugPanel();
+  }
+
+  function syncDebugPanel() {
+    if (!DEBUG_ENABLED) return;
+    const app = document.getElementById('app');
+    if (!app) return;
+    let panel = document.getElementById('debug-panel');
+    if (!panel) {
+      panel = el('div', {
+        id: 'debug-panel',
+        style: [
+          'position:fixed',
+          'left:8px',
+          'right:8px',
+          'bottom:8px',
+          'z-index:9999',
+          'background:rgba(17,24,39,.95)',
+          'color:#e5e7eb',
+          'border:1px solid rgba(255,255,255,.18)',
+          'border-radius:10px',
+          'padding:8px'
+        ].join(';')
+      });
+      panel.appendChild(el('div', { style: 'font-size:12px;font-weight:700;margin-bottom:6px;' }, [text('Debug (?debug=1)')]));
+      panel.appendChild(el('pre', {
+        id: 'debug-panel-body',
+        style: 'margin:0;max-height:32vh;overflow:auto;font-size:11px;line-height:1.35;white-space:pre-wrap;word-break:break-word;'
+      }, []));
+      app.appendChild(panel);
+    }
+    const body = document.getElementById('debug-panel-body');
+    if (!body) return;
+    body.textContent = debugState.logs.map(function (l) {
+      return [l.at, l.type, l.detail ? JSON.stringify(l.detail) : ''].join(' ');
+    }).join('\n');
   }
 
   window.addEventListener('load', init);
