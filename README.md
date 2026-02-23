@@ -23,9 +23,10 @@
 - `/Users/imaigenta/Documents/RankMaker/gas/Index.html` : 画面
 - `/Users/imaigenta/Documents/RankMaker/gas/Client.html` : フロント JS
 - `/Users/imaigenta/Documents/RankMaker/gas/Styles.html` : スタイル
-- `/Users/imaigenta/Documents/RankMaker/frontend/index.html` : GitHub Pages 用画面
-- `/Users/imaigenta/Documents/RankMaker/frontend/app.js` : GitHub Pages 用フロント JS
-- `/Users/imaigenta/Documents/RankMaker/frontend/styles.css` : GitHub Pages 用スタイル
+- `/Users/imaigenta/Documents/RankMaker/docs/index.html` : GitHub Pages 用画面
+- `/Users/imaigenta/Documents/RankMaker/docs/app.js` : GitHub Pages 用フロント JS
+- `/Users/imaigenta/Documents/RankMaker/docs/styles.css` : GitHub Pages 用スタイル
+- `/Users/imaigenta/Documents/RankMaker/docs/config.js` : GitHub Pages 用設定（ローカル確認用 / 本番は Actions で上書き生成）
 - `/Users/imaigenta/Documents/RankMaker/data/master-data.official-2025.json` : 2025年公式PDF解析結果（JSON）
 - `/Users/imaigenta/Documents/RankMaker/scripts/parse_official_entries_pdf.py` : PDF解析スクリプト（再生成用）
 
@@ -62,23 +63,26 @@
 
 ### 2. GitHub Pages（フロント）を用意（推奨）
 
-1. GitHub リポジトリに `frontend/` の内容を配置（Pages 公開対象）
-1. GitHub Pages を有効化
-1. 初回アクセス時に URL パラメータ `gas` で GAS の `/exec` URL を指定
-   - 例: `https://<yourname>.github.io/<repo>/?gas=https://script.google.com/macros/s/XXXX/exec`
-1. 管理ページは `?page=admin&gas=...` でアクセス
-   - 例: `https://<yourname>.github.io/<repo>/?page=admin&gas=https://script.google.com/macros/s/XXXX/exec`
-
-以降は `gas` パラメータを指定するとブラウザに保存されるため、同じ端末では省略可能です。
+1. GitHub リポジトリにこのプロジェクトを push
+1. GitHub の `Settings > Secrets and variables > Actions > Variables` に以下を追加
+   - `GAS_WEB_APP_URL` = GAS の `/exec` URL
+   - （公開ページのJSに埋め込まれる値なので `Secret` ではなく `Variable` 推奨）
+1. GitHub の `Actions` を有効化（初回のみ）
+1. `/Users/imaigenta/Documents/RankMaker/.github/workflows/deploy-pages.yml` により Pages デプロイを実行
+1. GitHub の `Settings > Pages` で `Source: GitHub Actions` を選択
+1. 公開URLにアクセス
+   - 参加者ページ: `https://<yourname>.github.io/<repo>/`
+   - 管理ページ: `https://<yourname>.github.io/<repo>/?page=admin`
 
 ## 初期運用フロー（管理者）
 
 1. 管理ページ（`?page=admin`）を開く
+1. 参加者を登録（管理画面の参加者追加）
 1. 締切日時を設定（例: `2026-03-13T23:59:59+09:00`）
 1. 大会終了後に結果を入力
-1. 必要なタイミングで「予想公開」「集計公開」を ON
+1. 必要なタイミングで「他参加者の予想を公開」「投票集計予想を公開」「結果比較を公開」を ON
 
-参加者は事前登録不要です。参加者ページで名前を入力すると、その名前で予想が保存されます。
+参加者は事前に管理画面で登録し、参加者ページで名前を選択して予想を入力します。
 
 ## 2025年エントリーについて
 

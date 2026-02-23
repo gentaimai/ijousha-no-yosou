@@ -1,0 +1,56 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build static site
+        env:
+          GAS_WEB_APP_URL: ${{ vars.GAS_WEB_APP_URL || secrets.GAS_WEB_APP_URL }}
+        run: |
+          set -eu
+          mkdir -p _site
+          cp docs/index.html _site/index.html
+          cp docs/app.js _site/app.js
+          cp docs/styles.css _site/styles.css
+          cat > _site/config.js <<EOF
+          window.APP_CONFIG = window.APP_CONFIG || {
+            gasWebAppUrl: "${GAS_WEB_APP_URL}"
+          };
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

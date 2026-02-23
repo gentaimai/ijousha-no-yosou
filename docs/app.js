@@ -22,7 +22,7 @@
   function init() {
     render();
     if (!bridgeClient.isConfigured()) {
-      flash('GAS のURLが未設定です。?gas=.../exec を付けるか frontend/index.html の APP_CONFIG を設定してください。', true);
+      flash('GAS のURLが未設定です。docs/config.js（Pages配信時はGitHub Variables）を確認してください。', true);
       return;
     }
     if (state.page === 'admin') {
@@ -1023,18 +1023,8 @@
   }
 
   function resolveGasWebAppUrl_() {
-    const params = new URLSearchParams(window.location.search);
-    const paramUrl = String(params.get('gas') || '').trim();
-    if (paramUrl) {
-      try { localStorage.setItem('rankmaker_gas_webapp_url', paramUrl); } catch (err) {}
-      return paramUrl;
-    }
     const configured = window.APP_CONFIG && String(window.APP_CONFIG.gasWebAppUrl || '').trim();
     if (configured) return configured;
-    try {
-      const saved = String(localStorage.getItem('rankmaker_gas_webapp_url') || '').trim();
-      if (saved) return saved;
-    } catch (err) {}
     return '';
   }
 
