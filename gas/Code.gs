@@ -732,7 +732,7 @@ function buildCrowdForecast_() {
       });
     });
 
-    const ranking = Object.keys(voteMap).map(function (entryId) {
+    const sortedRows = Object.keys(voteMap).map(function (entryId) {
       return voteMap[entryId];
     }).sort(function (a, b) {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -745,10 +745,17 @@ function buildCrowdForecast_() {
       const seedB = entrySeedMap[b.entryId] == null ? 9999 : entrySeedMap[b.entryId];
       if (seedA !== seedB) return seedA - seedB;
       return a.entryId < b.entryId ? -1 : 1;
-    }).slice(0, placementCount).map(function (row, idx) {
+    });
+
+    let prevPoints = null;
+    let prevRank = 0;
+    const ranking = sortedRows.map(function (row, idx) {
+      const rank = (prevPoints != null && row.totalPoints === prevPoints) ? prevRank : (idx + 1);
+      prevPoints = row.totalPoints;
+      prevRank = rank;
       const entry = entryMap[row.entryId];
       return {
-        predictedRank: idx + 1,
+        predictedRank: rank,
         entryId: row.entryId,
         athleteName: entry ? entry.athleteName : row.entryId,
         team: entry ? entry.team : '',
@@ -769,7 +776,7 @@ function buildCrowdForecast_() {
   });
 
   return {
-    rule: '各種目で1位=高得点 ... （3位種目は3-2-1点、4位種目は4-3-2-1点）',
+    rule: '各種目で1位=高得点 ... （3位種目は3-2-1点、4位種目は4-3-2-1点、同点は同順位）',
     events: eventForecasts,
   };
 }
